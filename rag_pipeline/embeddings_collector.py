@@ -6,7 +6,7 @@ import faiss
 from langchain_community.vectorstores import FAISS
 
 def load_text(path, chunk_size=256, chunk_overlap=64):
-    loader = TextLoader("hmao_npa.txt")
+    loader = TextLoader(path)
     base_docs = loader.load()
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=chunk_size, chunk_overlap=chunk_overlap)
     docs = text_splitter.split_documents(base_docs)
