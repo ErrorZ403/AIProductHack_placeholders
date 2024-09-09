@@ -39,4 +39,7 @@ def main():
                                     HuggingFaceEmbeddings(model_name=args.model_name, model_kwargs=model_kwargs, encode_kwargs=encode_kwargs))
     vectorstore.save_local(args.save_path)
 
+if __name__ == "__main__":
+    main()
+
     
