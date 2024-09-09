@@ -120,3 +120,6 @@ def main():
 
     basic_qa_ragas_dataset.to_csv(args.path_to_save)
     print(basic_qa_result)
+
+if __name__ == "__main__":
+    main()
