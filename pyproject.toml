@@ -1,0 +1,100 @@
+[tool.ruff.lint]
+select = ["E", "F", "B", "Q", "T", "N", "UP", "W", "C90", "COM", "PYI", "RSE", "RET", "SIM", "TID", "TCH", "ARG", "PT",
+    "PTH", "ERA", "PGH", "PL", "TRY", "RUF", "ANN", "S", "BLE", "C4", "PIE",
+    # "D" – будет требовать docstrings для публичных классов, методов и функций
+    # "INP" – будет сообщать, что модуль расположен в каталоге, где нет init.py. — Спорно...
+    # "G" – запретит использовать форматирование в при логгинге
+    # "DTZ" – утомит требованиями таймзоны при манипуляциях с дататми
+]
+ignore = ["RUF001", "RUF003", "D203", "D213", "ANN101", "ANN102", "ANN401", "S101"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/test_*.py" = [
+    "ANN001", "PGH004", "ANN201", "PLR0913", "BLE001",
+]
+
+[tool.ruff]
+output-format = "concise"
+
+line-length = 120
+exclude = ["migrations"]
+
+[tool.ruff_wrapper]
+baseline_file = './baselines/ruff'
+
+[tool.ruff.format]
+quote-style = "single"
+
+[tool.ruff.lint.flake8-quotes]
+inline-quotes = "single"
+multiline-quotes = "single"
+
+[tool.ruff.lint.isort]
+force-single-line = true
+
+[tool.bandit]
+exclude_dirs = ["tests", "migrations", "venv"]
+
+[tool.mypy] # https://mypy.readthedocs.io/en/stable/config_file.html
+disable_error_code = ['explicit-override']
+explicit_package_bases = true
+implicit_reexport = true  # https://github.com/konradhalas/dacite/issues/133#issuecomment-1186549192
+no_implicit_optional = true
+ignore_missing_imports = true
+follow_imports = "skip"
+disallow_untyped_defs = true
+disallow_any_expr = false
+disallow_any_explicit = false
+disallow_any_decorated = false
+
+disallow_subclassing_any = false
+disallow_any_unimported = false
+disallow_untyped_calls = false
+
+baseline_file = "./baselines/mypy"
+exclude = [
+    '\.git',
+    '\.cache',
+    '\.mypy_cache',
+    '\.pytest_cache',
+    '\.prospector',
+    '\.gitlab',
+    'charts',
+    'metabase',
+    'docs',
+    'grafana',
+    '\.idea',
+    '__pycache__\/',
+    'migrations\/',
+    "venv",
+]
+
+[tool.poetry]
+name = "copilot"
+version = "0.1.0"
+description = ""
+authors = ["alina <alina4268@mail.ru>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+numpy = "1.26.4"
+pyyaml = "^6.0.2"
+python-dotenv = "^1.0.1"
+pydantic = "^2.8.2"
+pandas = "^2.2.2"
+fastapi = "^0.112.0"
+celery = "^5.4.0"
+redis = "^5.0.8"
+boto3 = "^1.34.158"
+langchain = "^0.2.16"
+langchain-community = "^0.2.16"
+langchain-huggingface = "^0.0.3"
+setuptools = "^74.1.2"
+google-generativeai = "^0.7.2"
+faiss-cpu = "^1.8.0.post1"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
