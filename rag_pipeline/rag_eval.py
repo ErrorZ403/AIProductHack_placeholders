@@ -1,16 +1,6 @@
 import argparse
-from langchain_community.document_loaders import TextLoader
 from langchain_huggingface import HuggingFaceEmbeddings
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-import faiss
-from langchain_community.vectorstores import FAISS
 from langchain_community.llms import VLLM
-from langchain.callbacks.manager import CallbackManager
-from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
-from operator import itemgetter
-from langchain.schema.runnable import RunnableLambda, RunnablePassthrough
-from langchain.schema.output_parser import StrOutputParser
-from langchain.prompts import ChatPromptTemplate
 from ragas.metrics import (
     answer_relevancy,
     faithfulness,
@@ -61,12 +51,9 @@ def evaluate_ragas_dataset(ragas_dataset, llm, embeddings):
 def main():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("--doc_path", type=str, help="Path to documents")
     parser.add_argument("--dataset_path", type=str, help="Path to validation dataset")
     parser.add_argument("--model_name", type=str, help="Name of model from huggingface")
-    parser.add_argument("--emb_path", type=str, help="Path to embeddings")
     parser.add_argument("--model_name_llm", type=str, help="LLM Model name from hf")
-    parser.add_argument("--path_to_save", type=str, help="Path for saving rag results", default="rag_results.csv")
     parser.add_argument("--cuda", type=bool, default=False)
     parser.add_argument("--batch_size", type=int, default=1024)
 
@@ -80,40 +67,21 @@ def main():
     encode_kwargs = {'batch_size': args.batch_size}
 
     embeddings = HuggingFaceEmbeddings(model_name=args.model_name, model_kwargs=model_kwargs, encode_kwargs=encode_kwargs)
-    vectorstore = FAISS.load_local(args.emb_path, embeddings, allow_dangerous_deserialization=True)
-    base_retriever = vectorstore.as_retriever(search_type='similarity', search_kwargs={"k" : 10})
+    ragas_dataset = pd.read_csv(args.dataset_path)
+    ragas_dataset = ragas_dataset.rename(columns={"ground_truths": "ground_truth"})
+    ragas_dataset["contexts"]=ragas_dataset["contexts"].apply(lambda x : [x])
+    ragas_dataset = Dataset.from_pandas(ragas_dataset)
     
-    template = """Ответьте на вопрос, опираясь только на следующий контекст. Если вы не можете ответить на вопрос, опираясь на контекст, пожалуйста, ответьте «Я не знаю»:
-
-    ### КОНТЕКСТ
-    {context}
-
-    ### ВОПРОС
-    ВОПРОС: {question}
-    """
-
-    prompt = ChatPromptTemplate.from_template(template)
-
     llm = VLLM(
-        model=args.model_name_llm,
+        model='Qwen/Qwen2-7B',
         trust_remote_code=True,  # mandatory for hf models
         max_new_tokens=128,
         top_k=10,
         top_p=0.95,
         temperature=0.8,
     )
-
-    retrieval_augmented_qa_chain = (
-        {"context": itemgetter("question") | base_retriever, "question": itemgetter("question")}
-        | RunnablePassthrough.assign(context=itemgetter("context"))
-        | {"response": prompt | llm, "context": itemgetter("context")}
-    )
-
-    eval_dataset = pd.read_excel(args.dataset_path)[:50]
-    eval_dataset = Dataset.from_pandas(eval_dataset)
-    ragas_dataset = create_ragas_dataset(retrieval_augmented_qa_chain, eval_dataset)
-    qa_ragas_dataset.to_csv(args.path_to_save)
-    print('DONE')
+    result = evaluate_ragas_dataset(ragas_dataset, llm, embeddings)
+    print(result)
 
 if __name__ == "__main__":
     main()
