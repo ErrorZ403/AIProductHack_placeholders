@@ -1,0 +1,14 @@
+/.bash_profile
+/app/celery/ml/weight/
+/.DS_Store/
+/.bash_profile/
+/.idea/
+/.venv/
+**/venv/
+/.myenv/
+**/myenv/
+/postgres_data/
+**/__pycache__/
+**/.env
+**/tg_bot_env/
+**/chromadb/
