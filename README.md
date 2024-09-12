@@ -14,6 +14,8 @@ Follow these steps to set up and run the project:
 From the root directory of the project, execute the following command:
 
 docker build -t tg_bot
+
+
 docker run -d -p 8080:80 tg_bot
 
 
