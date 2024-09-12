@@ -17,21 +17,6 @@ import pandas as pd
 from tqdm import tqdm
 import torch
 
-def create_ragas_dataset(rag_pipeline, eval_dataset):
-  rag_dataset = []
-  for row in tqdm(eval_dataset):
-    answer = rag_pipeline.invoke({"question" : row["question"]})
-    rag_dataset.append(
-        {"question" : row["question"],
-         "answer" : answer["response"],
-         "contexts" : [context.page_content for context in answer["context"]],
-         "ground_truths" : [row["ground_truth"]]
-         }
-    )
-  rag_df = pd.DataFrame(rag_dataset)
-  rag_eval_dataset = Dataset.from_pandas(rag_df)
-  return rag_eval_dataset
-
 def evaluate_ragas_dataset(ragas_dataset, llm, embeddings):
   result = evaluate(
     ragas_dataset,
@@ -75,7 +60,7 @@ def main():
     llm = VLLM(
         model='Qwen/Qwen2-7B',
         trust_remote_code=True,  # mandatory for hf models
-        max_new_tokens=128,
+        max_new_tokens=10000,
         top_k=10,
         top_p=0.95,
         temperature=0.8,

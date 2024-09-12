@@ -1,31 +1,34 @@
 import argparse
-from langchain_community.document_loaders import TextLoader
-from langchain_huggingface import HuggingFaceEmbeddings
-from langchain.text_splitter import RecursiveCharacterTextSplitter
 import faiss
-from langchain_community.vectorstores import FAISS
-from langchain_community.llms import VLLM
-from langchain.callbacks.manager import CallbackManager
-from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
 from operator import itemgetter
-from langchain.schema.runnable import RunnableLambda, RunnablePassthrough
-from langchain.schema.output_parser import StrOutputParser
-from langchain.prompts import ChatPromptTemplate
-from ragas.metrics import (
-    answer_relevancy,
-    faithfulness,
-    context_recall,
-    context_precision,
-    answer_correctness,
-    answer_similarity
-)
-
-from ragas.metrics.critique import harmfulness
 from ragas import evaluate
 from datasets import Dataset
 import pandas as pd
 from tqdm import tqdm
 import torch
+
+from langchain_community.document_loaders import TextLoader
+from langchain_huggingface import HuggingFaceEmbeddings
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain.schema.runnable import RunnablePassthrough
+from langchain.prompts import ChatPromptTemplate
+from langchain_community.vectorstores import FAISS
+from langchain_community.llms import VLLM
+from langchain.retrievers import EnsembleRetriever
+from langchain_community.retrievers import BM25Retriever
+from langchain.retrievers import ContextualCompressionRetriever
+from langchain.retrievers.document_compressors import CrossEncoderReranker
+from langchain_community.cross_encoders import HuggingFaceCrossEncoder
+from langchain.chains import RetrievalQA
+
+
+def load_text(path, chunk_size=256, chunk_overlap=64):
+    loader = TextLoader(path)
+    base_docs = loader.load()
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=chunk_size, chunk_overlap=chunk_overlap)
+    docs = text_splitter.split_documents(base_docs)
+
+    return docs
 
 def create_ragas_dataset(rag_pipeline, eval_dataset):
   rag_dataset = []
@@ -42,22 +45,6 @@ def create_ragas_dataset(rag_pipeline, eval_dataset):
   rag_eval_dataset = Dataset.from_pandas(rag_df)
   return rag_eval_dataset
 
-def evaluate_ragas_dataset(ragas_dataset, llm, embeddings):
-  result = evaluate(
-    ragas_dataset,
-    metrics=[
-        context_precision,
-        faithfulness,
-        answer_relevancy,
-        context_recall,
-        answer_correctness,
-        answer_similarity
-    ],
-    llm=llm,
-    embeddings=embeddings
-  )
-  return result
-
 def main():
     parser = argparse.ArgumentParser()
 
@@ -69,6 +56,8 @@ def main():
     parser.add_argument("--path_to_save", type=str, help="Path for saving rag results", default="rag_results.csv")
     parser.add_argument("--cuda", type=bool, default=False)
     parser.add_argument("--batch_size", type=int, default=1024)
+    parser.add_argument("--bm25", type=bool, default=False)
+    parser.add_argument("--rerank", type=bool, default=False)
 
     args = parser.parse_args()
 
@@ -76,12 +65,29 @@ def main():
         device = 'cuda'
     else:
         device = 'cpu'
-    model_kwargs = {'device': device}
+    model_kwargs = {'device': device, "trust_remote_code": True}
     encode_kwargs = {'batch_size': args.batch_size}
+    
+    docs = load_text(args.doc_path, 256, 0)
 
     embeddings = HuggingFaceEmbeddings(model_name=args.model_name, model_kwargs=model_kwargs, encode_kwargs=encode_kwargs)
     vectorstore = FAISS.load_local(args.emb_path, embeddings, allow_dangerous_deserialization=True)
     base_retriever = vectorstore.as_retriever(search_type='similarity', search_kwargs={"k" : 10})
+    
+    if args.bm25:
+        bm25_retriever = BM25Retriever.from_documents(docs)
+        bm25_retriever.k = 3
+        base_retriever = EnsembleRetriever(retrievers=[bm25_retriever, base_retriever], weights=[0.75, 0.25])
+
+    if args.rerank:
+        model_kwargs = {'device': 'cuda', 'trust_remote_code': True}
+        
+        model = HuggingFaceCrossEncoder(model_name="jinaai/jina-reranker-v2-base-multilingual", model_kwargs=model_kwargs)
+        compressor = CrossEncoderReranker(model=model, top_n=3)
+        base_retriever = ContextualCompressionRetriever(
+            base_compressor=compressor, base_retriever=base_retriever
+        )
+    
     
     template = """Ответьте на вопрос, опираясь только на следующий контекст. Если вы не можете ответить на вопрос, опираясь на контекст, пожалуйста, ответьте «Я не знаю»:
 
@@ -97,7 +103,7 @@ def main():
     llm = VLLM(
         model=args.model_name_llm,
         trust_remote_code=True,  # mandatory for hf models
-        max_new_tokens=128,
+        max_new_tokens=10000,
         top_k=10,
         top_p=0.95,
         temperature=0.8,
