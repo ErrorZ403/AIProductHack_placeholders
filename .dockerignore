@@ -7,4 +7,5 @@
 **/venv/
 /postgres_data/
 **/__pycache__/
+**/.env
 /data_endpoints
