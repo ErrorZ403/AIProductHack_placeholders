@@ -118,7 +118,7 @@ def main():
     eval_dataset = pd.read_excel(args.dataset_path)[:50]
     eval_dataset = Dataset.from_pandas(eval_dataset)
     ragas_dataset = create_ragas_dataset(retrieval_augmented_qa_chain, eval_dataset)
-    qa_ragas_dataset.to_csv(args.path_to_save)
+    ragas_dataset.to_csv(args.path_to_save)
     print('DONE')
 
 if __name__ == "__main__":
