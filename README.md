@@ -23,17 +23,27 @@
 
 # Установка и запуск
 
-Следуйте следующим шагам, чтобы запустить проект:
+### Step 1: Clone the Repository
+Склонируйте репозиторий 
 
-1. **Создайте .env файл**
+```bash
+git clone https://github.com/BurykinaA/cv-motion-tracking-kids.git
+cd cv-motion-tracking-kids
+```
 
-   In the copilot directory, create a .env file based on the example provided in copilot/.env_example.
+### Step 2: Creatw env
 
-2. **Запустите Docker Compose**
+**Создайте .env файл**
+
+   В главной директории, создайте файл .env основываясь на примере - env_example
+
+### Step 3: La
 
 Из директории проекта запустите команду:
 
-    docker compose up
+```bash
+docker-compose up --build
+```
 
 
 # Описание репозитория
