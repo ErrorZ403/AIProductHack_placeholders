@@ -37,7 +37,11 @@ cd AIProductHack_placeholders
 
    В главной директории, создайте файл .env основываясь на примере - env_example
 
-### Step 3: Launch
+### Step 3: Add raw db
+
+   В главную директорию, поместить папку 
+
+### Step 4: Launch
 
 Из директории проекта запустите команду:
 
