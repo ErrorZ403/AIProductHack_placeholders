@@ -31,7 +31,7 @@ git clone https://github.com/BurykinaA/cv-motion-tracking-kids.git
 cd cv-motion-tracking-kids
 ```
 
-### Step 2: Creatw env
+### Step 2: Create env
 
 **Создайте .env файл**
 
