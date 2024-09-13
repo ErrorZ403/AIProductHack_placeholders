@@ -39,7 +39,7 @@ cd AIProductHack_placeholders
 
 ### Step 3: Add raw db
 
-   В главную директорию, поместить папку 
+   В главную директорию, поместить папки [data_chanks/e5large_256_64_faiss], где e5large_256_64_faiss это заранее полученные эмбеддинги
 
 ### Step 4: Launch
 
