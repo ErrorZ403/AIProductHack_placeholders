@@ -27,8 +27,8 @@
 Склонируйте репозиторий 
 
 ```bash
-git clone https://github.com/BurykinaA/cv-motion-tracking-kids.git
-cd cv-motion-tracking-kids
+git clone https://github.com/ErrorZ403/AIProductHack_placeholders.git
+cd AIProductHack_placeholders
 ```
 
 ### Step 2: Create env
