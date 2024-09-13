@@ -18,17 +18,6 @@ MAX_MESSAGE_LEN: int = 4095
 logger: logging.Logger = logging.getLogger(__name__)
 
 
-class PgVectorDBConfig(BaseModel):
-    dsn: str
-    name_of_model: str
-
-    @validator('name_of_model')
-    def check_non_empty(cls, value: str) -> str:
-        if not value.strip():
-            raise ValueError('Field cannot be empty')
-        return value
-
-
 class ModelConfig(BaseModel):
     model: Literal['gemini-1.5-pro-latest']
     frequency_penalty: Optional[float] = Field(None, ge=-2.0, le=2.0)
@@ -78,7 +67,6 @@ class Config:
     chat_model: AiChatModel
     voices_directory: Path
     google_api_key: str
-    pg_config: PgVectorDBConfig
     celery_broker_url: str
     celery_result_backend: str
     debug_mode: str
@@ -97,11 +85,6 @@ def load_config() -> Config:
     voices_directory = base_dir / 'temp'
     voices_directory.mkdir(exist_ok=True)
 
-    pg_config = PgVectorDBConfig(
-        dsn=get_env_variable('PGVECTOR_DSN'),
-        name_of_model=get_env_variable('EMBEDDING_MODEL'),
-    )
-
     celery_broker_url = get_env_variable('CELERY_BROKER_URL')
     celery_result_backend = get_env_variable('CELERY_RESULT_BACKEND')
     debug_mode = get_env_variable('DEBUG')
@@ -110,7 +93,6 @@ def load_config() -> Config:
         chat_model=chat_model,
         voices_directory=voices_directory,
         google_api_key=get_env_variable('GOOGLE_API_KEY'),
-        pg_config=pg_config,
         celery_broker_url=celery_broker_url,
         celery_result_backend=celery_result_backend,
         debug_mode=debug_mode,
